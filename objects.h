@@ -6,15 +6,16 @@
 
 #define MAX_X 1280.0f
 #define MAX_Y 720.0f
-#define MAX_SPEED 5.0f
-#define MIN_RADIUS 5.0f
-#define MAX_RADIUS 20.0f //Bizarre je peux pas mettre à 2.0f
+#define MAX_SPEED 100.0f
+#define MIN_RADIUS 30.0f
+#define MAX_RADIUS 50.0f //Bizarre je peux pas mettre à 2.0f
 #define GRAVITY 0.0f
 #define FRICTION 0.8f
-#define NUM_BALLS 200 //Bizarre je peux pas augmenter
+#define NUM_BALLS 4 //Bizarre je peux pas augmenter
 
-const int NUM_CASES_X = MAX_X / (int)MAX_RADIUS;
-const int NUM_CASES_Y = MAX_Y / (int)MAX_RADIUS;
+const int CELL_SIZE = 4 * (int)MAX_RADIUS;
+const int NUM_CASES_X = MAX_X / CELL_SIZE;
+const int NUM_CASES_Y = MAX_Y / CELL_SIZE;
 
 
 class Point{
@@ -56,9 +57,9 @@ class Ball : public Point {
 
         }
 
-        void update(){
-            speed.y += GRAVITY;
-            pos += speed;
+        void update(float delta_sec){
+            speed.y += GRAVITY * delta_sec;
+            pos += speed * delta_sec;
             if(pos.x - radius < 0.0f){
                 pos.x += 2.0f * (radius - pos.x);
                 speed.x *= FRICTION * -1.0f;
@@ -81,37 +82,32 @@ class Ball : public Point {
 
 
 bool collision(Ball* b1, Ball* b2){
-    float sum_radius = b1->radius + b2->radius;
-    Vector2f dist = b1->pos - b2->pos;
-    float dist_squared = dist.x * dist.x + dist.y * dist.y;
-    if( dist_squared <= sum_radius * sum_radius){ //Comparer la distance au carré est plus rapide
+    std::cout << "xo";
+    Vector2f normal = b2->pos - b1->pos;
+    float distance = length(normal);
+    if (distance <= b1->radius + b2->radius) {
+        std::cout << "\nCOLLISION\n";
+        Vector2f collision_normal = normalize(normal);
 
-        Vector2f normal = b2->pos - b1->pos;
-        float distance = length(normal);
-        if (distance <= b1->radius + b2->radius) {
-            Vector2f collision_normal = normalize(normal);
+        // Relative velocity along the collision normal
+        Vector2f relativeVelocity = b2->speed - b1->speed;
+        float collision_speed = dotProduct(relativeVelocity, collision_normal);
 
-            // Relative velocity along the collision normal
-            Vector2f relativeVelocity = b2->speed - b1->speed;
-            float collision_speed = dotProduct(relativeVelocity, collision_normal);
+        // Impulse calculation
+        float impulse = (2.0f * collision_speed) / (b1->mass + b2->mass);
 
-            // Impulse calculation
-            float impulse = (2.0f * collision_speed) / (b1->mass + b2->mass);
+        // Apply impulse to velocities
+        b1->speed += impulse * b2->mass * collision_normal;
+        b2->speed -= impulse * b1->mass * collision_normal;
 
-            // Apply impulse to velocities
-            b1->speed += impulse * b2->mass * collision_normal;
-            b2->speed -= impulse * b1->mass * collision_normal;
-
-            // Move the balls to avoid overlap
-            float overlap = (b1->radius + b2->radius) - distance;
-            b1->pos -= overlap * 0.5f * collision_normal;
-            b2->pos += overlap * 0.5f * collision_normal;
-        }
-        // https://www.vobarian.com/collisions/2dcollisions2.pdf
+        // Move the balls to avoid overlap
+        float overlap = (b1->radius + b2->radius) - distance;
+        b1->pos -= overlap * 0.5f * collision_normal;
+        b2->pos += overlap * 0.5f * collision_normal;
         return true;
     }
     return false;
-}
+} // https://www.vobarian.com/collisions/2dcollisions2.pdf
 
 void randomBalls(Ball balls[]){
     std::random_device rd;
@@ -148,8 +144,8 @@ void placeBalls(Ball balls[],std::vector<int> grid[NUM_CASES_X][NUM_CASES_Y], Ci
 
     int grid_x, grid_y;
     for(int i=0;i<NUM_BALLS;i++){
-        grid_x = (int)balls[i].pos.x / (int)MAX_RADIUS;
-        grid_y = (int)balls[i].pos.y / (int)MAX_RADIUS;
+        grid_x = (int)balls[i].pos.x / CELL_SIZE;
+        grid_y = (int)balls[i].pos.y / CELL_SIZE;
         if(grid_x>=NUM_CASES_X){
             grid_x = NUM_CASES_X - 1;
         }

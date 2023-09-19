@@ -21,9 +21,29 @@ int main(){
     rectangle.setOutlineThickness(10);
     rectangle.setOutlineColor(Color(212, 212, 212));
 
+    //Créer la grille visuelle
+    int num_segments = NUM_CASES_X + NUM_CASES_Y - 2;
+    sf::VertexArray visual_grid(sf::Lines, 2*(num_segments));
+    // row separators
+    for(int i=0; i < NUM_CASES_Y-1; i++){
+        int r = i+1;
+        float rowY = CELL_SIZE*r;
+        visual_grid[i*2].position = {0, rowY};
+        visual_grid[i*2+1].position = {MAX_X, rowY};
+    }
+    // column separators
+
+    for(int i=NUM_CASES_Y-1; i < num_segments; i++){
+        int c = i-NUM_CASES_Y+2;
+        float colX = CELL_SIZE*c;
+        visual_grid[i*2].position = {colX, 0};
+        visual_grid[i*2+1].position = {colX, MAX_Y};
+    }
+
+
 
     Clock clock;
-    window.setFramerateLimit(60);
+    //window.setFramerateLimit(60);
     Time t;
 
     const int relative_grid[3][2] = {{0,1}, //Utile plus tard pour parcourir les 3 cases à droite et en bas de la case actuelle
@@ -38,6 +58,7 @@ int main(){
 
         window.clear();
         window.draw(rectangle);
+        window.draw(visual_grid);
 
         placeBalls(balls,grid,circles);
 
@@ -70,7 +91,7 @@ int main(){
         for (int i=0;i<NUM_BALLS;i++) {
             circles[i].setPosition(balls[i].pos.x - balls[i].radius, balls[i].pos.y - balls[i].radius);
             window.draw(circles[i]);
-            balls[i].update();
+            balls[i].update(t.asSeconds());
         }
         //Changer les positions des balles dans la grille
 
@@ -84,6 +105,6 @@ int main(){
 
         window.display();
         t = clock.getElapsedTime();
-        std::cout << 1.0 / t.asSeconds() << " fps\n";
+        //std::cout << 1.0 / t.asSeconds() << " fps\n";
     }
 }
