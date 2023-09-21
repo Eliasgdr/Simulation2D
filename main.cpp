@@ -18,6 +18,9 @@ int main(){
     rectangle.setFillColor(Color(48, 48, 64));
     rectangle.setOutlineThickness(10);
     rectangle.setOutlineColor(Color(212, 212, 212));
+    RectangleShape dynamic_background[NUM_CASES_X][NUM_CASES_Y];
+
+
 
     /*
     //Créer la grille visuelle
@@ -74,8 +77,26 @@ int main(){
 
         placeBalls(balls,grid);
 
-        for(int ix=0;ix<NUM_CASES_X-1;ix++){ //Parcours toutes les cases de la grille
-            for(int iy=0;iy<NUM_CASES_Y-1;iy++){
+
+        //Fond dynamique :
+        for(int x=0;x<NUM_CASES_X;x++){
+            for(int y=0;y<NUM_CASES_Y;y++){
+                dynamic_background[x][y].setPosition(x*CELL_SIZE, y*CELL_SIZE);
+                dynamic_background[x][y].setSize(sf::Vector2f(CELL_SIZE, CELL_SIZE));
+                dynamic_background[x][y].setOutlineThickness(2);
+                dynamic_background[x][y].setOutlineColor(Color(255, 255, 255));
+                if(grid[x][y].empty()){
+                    dynamic_background[x][y].setFillColor(Color(0, 0, 0));
+                }
+                else {
+                    dynamic_background[x][y].setFillColor(Color(0, 0, 200));
+                }
+                window.draw(dynamic_background[x][y]);
+            }
+        }
+
+        for(int ix=1;ix<NUM_CASES_X-1;ix++){ //Parcours toutes les cases de la grille
+            for(int iy=1;iy<NUM_CASES_Y-1;iy++){
                 std::vector<int> current_vector = grid[ix][iy];
                 if (current_vector.empty()){
                     continue; //Passe à l'itération suivante si le vecteur est vide
@@ -87,8 +108,10 @@ int main(){
                     }
 
                     //Collision avec les balles dans d'autres cases
+                    std::vector<int> other_vector;
                     for(int r=0; r<8; r++){
-                        std::vector<int> other_vector = grid[ix + relative_grid[r][0]][iy + relative_grid[r][1]]; //Parcours les 3 cases à droite et en bas
+                        //std::cout <<"x="<<ix + relative_grid[r][0]<<" y="<<iy + relative_grid[r][1]<<" size="<<grid[ix + relative_grid[r][0]][iy + relative_grid[r][1]].size() << '\n';
+                        other_vector = grid[ix + relative_grid[r][0]][iy + relative_grid[r][1]]; //Parcours les 3 cases à droite et en bas
                         if (other_vector.empty()){
                             continue; //Passe à l'itération suivante si le vecteur est vide
                         }
@@ -113,14 +136,11 @@ int main(){
             //std::cout<<"b.x = "<<balls[a].pos.x <<" c.x = "<<circles[a].getPosition().x<<'\n';
             window.draw(balls[a].getCircle());
         }
-        //Changer les positions des balles dans la grille
-
-
 
 
 
         window.display();
         t = clock.getElapsedTime();
-        std::cout << 1.0 / t.asSeconds() << " fps\n";
+        //std::cout << 1.0 / t.asSeconds() << " fps\n";
     }
 }

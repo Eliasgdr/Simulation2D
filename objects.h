@@ -11,11 +11,11 @@
 #define MAX_RADIUS 50.0f //Bizarre je peux pas mettre à 2.0f
 #define GRAVITY 800.0f
 #define FRICTION 0.9f
-#define NUM_BALLS 20 //Bizarre je peux pas augmenter
+#define NUM_BALLS 3 //Bizarre je peux pas augmenter
 
-const int CELL_SIZE = 4 * (int)MAX_RADIUS;
-const int NUM_CASES_X = MAX_X / CELL_SIZE;
-const int NUM_CASES_Y = MAX_Y / CELL_SIZE;
+const int CELL_SIZE = 3 * (int)MAX_RADIUS;
+const int NUM_CASES_X = (MAX_X / CELL_SIZE)+1;
+const int NUM_CASES_Y = (MAX_Y / CELL_SIZE)+1;
 
 class Ball{
     private:
@@ -144,6 +144,7 @@ class Ball{
 
 
 bool collision(Ball* b1, Ball* b2){
+    std::cout<<"COLLISION\n";
     float sum_radius = b1->getRadius() + b2->getRadius();
     Vector2f dist = b1->getPos() - b2->getPos();
     float dist_squared = dist.x * dist.x + dist.y * dist.y;
@@ -172,6 +173,7 @@ bool collision(Ball* b1, Ball* b2){
         float angle = atan2f(b2->getPos().y - b1->getPos().y, b2->getPos().x - b1->getPos().x);
         b2->setPos(b2->getPos().x + cosf(angle) * dist_to_move / 2, b2->getPos().y + sinf(angle) * dist_to_move / 2);
         b1->setPos(b1->getPos().x + cosf(angle + (float) M_PI) * dist_to_move / 2, b1->getPos().y + sinf(angle + (float) M_PI) * dist_to_move / 2);
+
         return true;
     }
     return false;
