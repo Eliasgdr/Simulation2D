@@ -1,14 +1,30 @@
+/*
+A faire:
+- Tester Verlet
+-
+ */
+
 #include <iostream>
 #include <vector>
 #include <SFML/Graphics.hpp>
 #include "objects.h"
 
+#define SUB_STEPS 1
 
 int main(){
 //Setup
     Ball balls[NUM_BALLS]; //Tableau contenant toutes les balles
 
     randomBalls(balls); //Rempli le tableau de balles aux valeurs aléatoires
+    /*
+    //Test avec conditions fixes
+    Uint8 red[3] = {255,0,0};
+    Uint8 green[3] = {0,255,0};
+    Uint8 blue[3] = {0,0,255};
+    balls[0] = Ball(100.0, 500.0, 0.0, 0.0, 20.0, red);
+    balls[1] = Ball(100.0, 100.0, 0.0, 0.0, 30.0, green);
+    balls[2] = Ball(500.0, 500.0, -50.0, 0.0, 20.0, blue);
+     */
     RenderWindow window(sf::VideoMode(MAX_X, MAX_Y), "2D Simulation"); //Initialise la fenêtre de rendu
 
     std::vector<int> grid[NUM_CASES_X][NUM_CASES_Y]; // Créer une grille 3D de taille variable sur l'axe z
@@ -22,40 +38,10 @@ int main(){
 
 
 
-    /*
-    //Créer la grille visuelle
-    int num_segments = NUM_CASES_X + NUM_CASES_Y - 2;
-    sf::VertexArray visual_grid(sf::Lines, 2*(num_segments));
-    // row separators
-    for(int i=0; i < NUM_CASES_Y-1; i++){
-        int r = i+1;
-        auto rowY = (float) (CELL_SIZE*r);
-        visual_grid[i*2].position = {0, rowY};
-        visual_grid[i*2+1].position = {MAX_X, rowY};
-    }
-    // column separators
-
-    for(int i=NUM_CASES_Y-1; i < num_segments; i++){
-        int c = i-NUM_CASES_Y+2;
-        auto colX = (float) (CELL_SIZE*c);
-        visual_grid[i*2].position = {colX, 0};
-        visual_grid[i*2+1].position = {colX, MAX_Y};
-    }*/
-
-
-
     Clock clock;
-    window.setFramerateLimit(60);
+    //window.setFramerateLimit(60);
     Time t;
 
-    const int relative_grid[8][2] = {{-1,-1}, //Utile plus tard pour parcourir les 3 cases à droite et en bas de la case actuelle
-                                    {-1,0},
-                                    {-1,1},
-                                    {0,-1},
-                                    {0,1},
-                                    {1,-1},
-                                    {1,0},
-                                    {1,1}};
 
 //Boucle principale
     int frame = 0;
@@ -77,7 +63,7 @@ int main(){
 
         placeBalls(balls,grid);
 
-
+        /*
         //Fond dynamique :
         for(int x=0;x<NUM_CASES_X;x++){
             for(int y=0;y<NUM_CASES_Y;y++){
@@ -93,36 +79,56 @@ int main(){
                 }
                 window.draw(dynamic_background[x][y]);
             }
-        }
+        }*/
 
-        for(int ix=1;ix<NUM_CASES_X-1;ix++){ //Parcours toutes les cases de la grille
-            for(int iy=1;iy<NUM_CASES_Y-1;iy++){
-                std::vector<int> current_vector = grid[ix][iy];
-                if (current_vector.empty()){
-                    continue; //Passe à l'itération suivante si le vecteur est vide
-                }
-                for(int j=0;j<current_vector.size()-1;j++) {
-                    int current_ball = current_vector.at(j);  //On parcourt en 3D la grille et sélectionne une balle
-                    for(int k=j+1;k<current_vector.size();k++){
-                        collision(&balls[current_ball],&balls[current_vector.at(k)]); // Collision entre la balle actuelle et les autres de la même case
+        int rx_max, ry_max, rx_min, ry_min;
+        for(int step=0;step<SUB_STEPS;step++) {
+            for (int ix = 0; ix < NUM_CASES_X; ix++) { //Parcours toutes les cases de la grille
+                for (int iy = 0; iy < NUM_CASES_Y; iy++) {
+                    std::vector<int> current_vector = grid[ix][iy];
+                    if (current_vector.size() <= 1) {
+                        continue; //Passe à l'itération suivante si le vecteur contient une balle ou moins
                     }
-
-                    //Collision avec les balles dans d'autres cases
-                    std::vector<int> other_vector;
-                    for(int r=0; r<8; r++){
-                        //std::cout <<"x="<<ix + relative_grid[r][0]<<" y="<<iy + relative_grid[r][1]<<" size="<<grid[ix + relative_grid[r][0]][iy + relative_grid[r][1]].size() << '\n';
-                        other_vector = grid[ix + relative_grid[r][0]][iy + relative_grid[r][1]]; //Parcours les 3 cases à droite et en bas
-                        if (other_vector.empty()){
-                            continue; //Passe à l'itération suivante si le vecteur est vide
+                    for (int j = 0; j < current_vector.size() - 1; j++) {
+                        int current_ball = current_vector.at(j);  //On parcourt en 3D la grille et sélectionne une balle
+                        for (int k = j + 1; k < current_vector.size(); k++) {
+                            collision(&balls[current_ball], &balls[current_vector.at(
+                                    k)]); // Collision entre la balle actuelle et les autres de la même case
                         }
-                        for(int other_ball : other_vector){
-                            collision(&balls[current_ball], &balls[other_ball]);
+
+                        //Collision avec les balles dans d'autres cases
+                        std::vector<int> other_vector;
+                        rx_max = 1;
+                        if (ix == NUM_CASES_X-1) {
+                            rx_max = 0;
+                        }
+                        ry_max = 1;
+                        if (iy == NUM_CASES_Y-1) {
+                            ry_max = 0;
+                        }
+                        rx_min = -1;
+                        if (ix == 0) {
+                            rx_min = 0;
+                        }
+                        ry_min = -1;
+                        if (iy == 0) {
+                            ry_min = 0;
+                        }
+                        for (int rx = rx_min; rx < rx_max; rx++) {
+                            for (int ry = ry_min; ry < ry_max; ry++) {
+                                other_vector = grid[ix + rx][iy + ry]; //Parcours les 3 cases à droite et en bas
+                                if (other_vector.empty()) {
+                                    continue; //Passe à l'itération suivante si le vecteur est vide
+                                }
+                                for (int other_ball: other_vector) {
+                                    collision(&balls[current_ball], &balls[other_ball]);
+                                }
+                            }
                         }
                     }
                 }
             }
         }
-
 
         /*
         for (int i=0;i<NUM_BALLS;i++){
@@ -141,6 +147,6 @@ int main(){
 
         window.display();
         t = clock.getElapsedTime();
-        //std::cout << 1.0 / t.asSeconds() << " fps\n";
+        std::cout << 1.0 / t.asSeconds() << " fps\n";
     }
 }

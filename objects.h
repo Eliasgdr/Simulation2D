@@ -7,15 +7,16 @@
 #define MAX_X 1280.0f
 #define MAX_Y 720.0f
 #define MAX_SPEED 200.0f
-#define MIN_RADIUS 20.0f
-#define MAX_RADIUS 50.0f //Bizarre je peux pas mettre à 2.0f
-#define GRAVITY 800.0f
-#define FRICTION 0.9f
-#define NUM_BALLS 3 //Bizarre je peux pas augmenter
+#define FIXED_RADIUS true
+#define MIN_RADIUS 1.0f
+#define MAX_RADIUS 3.0f //Bizarre, je peux pas mettre à 2.0f
+#define GRAVITY 0.0f //800
+#define FRICTION 0.8f
+#define NUM_BALLS 2000 //Bizarre je peux pas augmenter
 
-const int CELL_SIZE = 3 * (int)MAX_RADIUS;
-const int NUM_CASES_X = (MAX_X / CELL_SIZE)+1;
-const int NUM_CASES_Y = (MAX_Y / CELL_SIZE)+1;
+const int CELL_SIZE = 5 * (int)MAX_RADIUS;
+const int NUM_CASES_X = ((int)MAX_X / CELL_SIZE)+1;
+const int NUM_CASES_Y = ((int)MAX_Y / CELL_SIZE)+1;
 
 class Ball{
     private:
@@ -143,48 +144,50 @@ class Ball{
 };
 
 
-bool collision(Ball* b1, Ball* b2){
-    std::cout<<"COLLISION\n";
+bool collision(Ball* b1, Ball* b2) {
     float sum_radius = b1->getRadius() + b2->getRadius();
     Vector2f dist = b1->getPos() - b2->getPos();
     float dist_squared = dist.x * dist.x + dist.y * dist.y;
-    if(_isnan(b1->getPos().x)){
-            std::cout<<"collision NaN\n";
-    }
-    if( dist_squared <= sum_radius * sum_radius){ //Comparer la distance au carré est plus rapide
+    if (dist_squared <= sum_radius * sum_radius) { //Comparer la distance au carré est plus rapide
 
-        Vector2f normal_vect = b1->getPos() - b2->getPos(); // Vecteur n
-        Vector2f unit_vect = normal_vect / sqrtf(normal_vect.x * normal_vect.x + normal_vect.y * normal_vect.y); //Vecteur un
-        Vector2f tangent_vect = Vector2f(-1.0f * unit_vect.y, unit_vect.x); //Vecteur ut
+        Vector2f normal = b2->getPos() - b1->getPos();
+        float distance = length(normal);
+        if (distance <= b1->getRadius() + b2->getRadius()) {
+            Vector2f collision_normal = normalize(normal);
 
-        float b1_norm = dotProduct(unit_vect, b1->getVel()); //Scalaire v1n
-        float b1_tangent = dotProduct(tangent_vect, b1->getVel()); //Scalaire v1t
-        float b2_norm = dotProduct(unit_vect, b2->getVel()); //Scalaire v2n
-        float b2_tangent = dotProduct(tangent_vect, b2->getVel()); //Scalaire v2t
+            // Relative velocity along the collision normal
+            Vector2f relativeVelocity = b2->getVel() - b1->getVel();
+            float collision_speed = dotProduct(relativeVelocity, collision_normal);
 
-        float b1_norm_new = FRICTION * (b1_norm * (b1->getMass() - b2->getMass()) + 2 * b2->getMass() * b2_norm) / (b1->getMass() + b2->getMass());
-        float b2_norm_new = FRICTION * (b2_norm * (b2->getMass() - b1->getMass()) + 2 * b1->getMass() * b1_norm) / (b1->getMass() + b2->getMass());
+            // Impulse calculation
+            float impulse = (2.0f * collision_speed) / (b1->getMass() + b2->getMass());
 
-        b1->setVel((b1_norm_new * unit_vect) + (b1_tangent * tangent_vect));
-        b2->setVel((b2_norm_new * unit_vect) + (b2_tangent * tangent_vect));
+            // Apply impulse to velocities
+            b1->setVel(b1->getVel() + impulse * b2->getMass() * collision_normal);
+            b2->setVel(b2->getVel() - impulse * b1->getMass() * collision_normal);
 
-        // Pour être sûr que les balles ne restent pas en collision
-        float dist_to_move = sum_radius - sqrtf(dist_squared);
-        float angle = atan2f(b2->getPos().y - b1->getPos().y, b2->getPos().x - b1->getPos().x);
-        b2->setPos(b2->getPos().x + cosf(angle) * dist_to_move / 2, b2->getPos().y + sinf(angle) * dist_to_move / 2);
-        b1->setPos(b1->getPos().x + cosf(angle + (float) M_PI) * dist_to_move / 2, b1->getPos().y + sinf(angle + (float) M_PI) * dist_to_move / 2);
-
+            // Move the balls to avoid overlap
+            float overlap = (b1->getRadius() + b2->getRadius()) - distance;
+            b1->setPos(b1->getPos() - overlap * 0.5f * collision_normal);
+            b2->setPos(b2->getPos() + overlap * 0.5f * collision_normal);
+        }
+        // https://www.vobarian.com/collisions/2dcollisions2.pdf
         return true;
     }
     return false;
-} // https://www.vobarian.com/collisions/2dcollisions2.pdf
+}
 
 void randomBalls(Ball balls[]){
     std::random_device rd;
     std::mt19937 gen(rd());
     for(int i=0;i<NUM_BALLS;i++){
-        std::uniform_real_distribution<float> dis_radius(MIN_RADIUS, MAX_RADIUS);
-        balls[i].setRadius(dis_radius(gen));
+        if(FIXED_RADIUS){
+            balls[i].setRadius(MIN_RADIUS);
+        }
+        else {
+            std::uniform_real_distribution<float> dis_radius(MIN_RADIUS, MAX_RADIUS);
+            balls[i].setRadius(dis_radius(gen));
+        }
 
         std::uniform_real_distribution<float> dis_x(balls[i].getRadius(), MAX_X - balls[i].getRadius());
         std::uniform_real_distribution<float> dis_y(balls[i].getRadius(), MAX_Y - balls[i].getRadius());
