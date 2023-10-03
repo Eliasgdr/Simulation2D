@@ -1,7 +1,0 @@
-# ninja log v5
-1673	2151	7180668920551612	Simulation2D.exe	7fb661cd56f15359
-5	1672	7180668915821099	CMakeFiles/Simulation2D.dir/main.cpp.obj	62e168e35b467c27
-3	284	7180716996534260	build.ninja	c4b43a5b2436afdf
-16	113	7177041301664082	CMakeFiles/Simulation2D.dir/testgpu.cpp.obj	8e825d0c91cd2000
-6	1268	7180717048796429	CMakeFiles/Simulation2D.dir/main.cpp.obj	62e168e35b467c27
-1268	1765	7180717053699032	Simulation2D.exe	7fb661cd56f15359

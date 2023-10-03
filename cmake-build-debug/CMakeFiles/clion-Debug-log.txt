@@ -1,5 +1,0 @@
-"E:\JetBrains\CLion 2023.1.1\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=E:/JetBrains/CLion 2023.1.1/bin/ninja/win/x64/ninja.exe" -G Ninja -S "C:\Users\elias\OneDrive - etu.u-cergy.fr\Documents\_Code\C++\Simulation2D" -B "C:\Users\elias\OneDrive - etu.u-cergy.fr\Documents\_Code\C++\Simulation2D\cmake-build-debug"
--- Found SFML 2.6.0 in C:/SFML/lib/cmake/SFML
--- Configuring done
--- Generating done
--- Build files have been written to: C:/Users/elias/OneDrive - etu.u-cergy.fr/Documents/_Code/C++/Simulation2D/cmake-build-debug
