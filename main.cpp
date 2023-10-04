@@ -15,8 +15,9 @@ int main(){
     Ball* balls = new Ball[NUM_BALLS];//Tableau contenant toutes les balles
 
     randomBalls(balls); //Rempli le tableau de balles aux valeurs aléatoires
+    std::vector<int> grid[NUM_CASES_X][NUM_CASES_Y]; // Créer une grille 3D de taille variable sur l'axe z
+    //Test avec conditions fixes :
     /*
-    //Test avec conditions fixes
     Uint8 red[3] = {255,0,0};
     Uint8 green[3] = {0,255,0};
     Uint8 blue[3] = {0,0,255};
@@ -24,9 +25,8 @@ int main(){
     balls[1] = Ball(100.0, 100.0, 0.0, 0.0, 30.0, green);
     balls[2] = Ball(500.0, 500.0, -50.0, 0.0, 20.0, blue);
      */
-    RenderWindow window(sf::VideoMode(MAX_X, MAX_Y), "2D Simulation"); //Initialise la fenêtre de rendu
 
-    std::vector<int> grid[NUM_CASES_X][NUM_CASES_Y]; // Créer une grille 3D de taille variable sur l'axe z
+    RenderWindow window(sf::VideoMode(MAX_X, MAX_Y), "2D Simulation"); //Initialise la fenêtre de rendu
 
     //Créer le fond
     RectangleShape rectangle(Vector2f(MAX_X, MAX_Y));
@@ -36,17 +36,14 @@ int main(){
     RectangleShape dynamic_background[NUM_CASES_X][NUM_CASES_Y];
 
 
-
     Clock clock;
     //window.setFramerateLimit(60);
     Time t;
 
 
 //Boucle principale
-    int frame = 0;
     while (window.isOpen())
     {
-        frame++;
         Event event{};
         clock.restart().asSeconds();
 
@@ -58,7 +55,6 @@ int main(){
 
         window.clear();
         window.draw(rectangle);
-        //window.draw(visual_grid);
 
         placeBalls(balls,grid);
 
@@ -95,7 +91,7 @@ int main(){
                                 std::vector<int>& other_vector = grid[ix + rx][iy + ry];
                                 for (int other_ball : other_vector) {
                                     if (current_ball != other_ball) {
-                                        collision(&balls[current_ball], &balls[other_ball], &window);
+                                        collision(&balls[current_ball], &balls[other_ball]);
                                     }
                                 }
                             }
@@ -103,18 +99,19 @@ int main(){
                     }
                 }
             }
+            /*
+            for (int i=0;i<NUM_BALLS;i++){ Résolveur de collisions plus basique
+                for (int j=i+1;j<NUM_BALLS;j++){
+                    collision(&balls[i],&balls[j]);
+                }
+            }*/
         }
 
-        /*
-        for (int i=0;i<NUM_BALLS;i++){
-            for (int j=i+1;j<NUM_BALLS;j++){
-                collision(&balls[i],&balls[j]);
-            }
-        }*/
+
 
         for (int a=0;a<NUM_BALLS;a++){
             balls[a].update(t.asSeconds());
-            window.draw(balls[a].getCircle());
+            window.draw(balls[a].circle);
         }
 
 

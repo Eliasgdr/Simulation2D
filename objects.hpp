@@ -6,7 +6,7 @@
 #include "vectors.hpp"
 
 class Ball{
-    private:
+    public:
         CircleShape circle;
         Vector2f velocity;
         float mass;
@@ -131,16 +131,7 @@ class Ball{
 };
 
 
-bool collision(Ball* b1, Ball* b2, RenderWindow* win) {
-    /*
-    Vertex line[2];
-    line[0].position = b1->getPos();
-    line[0].color  = sf::Color::White;
-    line[1].position = b2->getPos();
-    line[1].color = sf::Color::White;
-    win->draw(line,2,sf::Lines);
-    */
-
+bool collision(Ball* b1, Ball* b2) {
     Vector2f normal = b2->getPos() - b1->getPos();
     float distance = length(normal);
     if (distance <= b1->getRadius() + b2->getRadius()) {
