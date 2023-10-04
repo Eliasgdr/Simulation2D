@@ -11,7 +11,6 @@ class Ball{
         Vector2f velocity;
         float mass;
 
-    public:
         Ball(){
             circle = CircleShape();
             velocity = Vector2f();
@@ -29,20 +28,16 @@ class Ball{
             return circle.getPosition();
         }
 
-        Vector2f getVel(){
+        Vector2f getVel() const{
             return velocity;
         }
 
-        float getRadius(){
+        float getRadius() const{
             return circle.getRadius();
         }
 
         float getMass() const{
             return mass;
-        }
-
-        CircleShape getCircle(){
-            return circle;
         }
 
         void setPos(float x, float y){
@@ -131,39 +126,39 @@ class Ball{
 };
 
 
-bool collision(Ball* b1, Ball* b2) {
+bool collision(Ball* b1, Ball* b2) {//Vérifie si les 2 balles entrent en collision et change leurs positions et vitesses
     Vector2f normal = b2->getPos() - b1->getPos();
     float distance = length(normal);
-    if (distance <= b1->getRadius() + b2->getRadius()) {
+    if (distance <= b1->getRadius() + b2->getRadius()) {//Vérifie que les balles sont en contact
         Vector2f collision_normal = normalize(normal);
 
-        // Relative velocity along the collision normal
+        //Vélocité relative au vecteur normal
         Vector2f relativeVelocity = b2->getVel() - b1->getVel();
         float collision_speed = dotProduct(relativeVelocity, collision_normal);
 
-        // Impulse calculation
+        //Calcule la force de l'impact
         float impulse = (2.0f * collision_speed) / (b1->getMass() + b2->getMass());
 
-        // Apply impulse to velocities
+        //Ajoute cette force aux vélocités
         b1->setVel(b1->getVel() + impulse * b2->getMass() * collision_normal);
         b2->setVel(b2->getVel() - impulse * b1->getMass() * collision_normal);
 
-        // Move the balls to avoid overlap
+        //Déplace les balles pour qu'elles ne restent pas en contact
         float overlap = (b1->getRadius() + b2->getRadius()) - distance;
         b1->setPos(b1->getPos() - overlap * 0.5f * collision_normal);
         b2->setPos(b2->getPos() + overlap * 0.5f * collision_normal);
-        
+
         return true;
     }
     return false;
 }// https://www.vobarian.com/collisions/2dcollisions2.pdf
 
-void randomBalls(Ball balls[]){
+void randomBalls(Ball balls[]){//Remplit le tableau de balles de valeurs aléatoires
     std::random_device rd;
     std::mt19937 gen(rd());
     for(int i=0;i<NUM_BALLS;i++){
         if(FIXED_RADIUS){
-            balls[i].setRadius(MIN_RADIUS);
+            balls[i].setRadius(MAX_RADIUS);
         }
         else {
             std::uniform_real_distribution<float> dis_radius(MIN_RADIUS, MAX_RADIUS);
@@ -176,15 +171,11 @@ void randomBalls(Ball balls[]){
 
         std::uniform_real_distribution<float> dis_speed(-MAX_SPEED, MAX_SPEED);
         balls[i].setVel(dis_speed(gen), dis_speed(gen));
-
-        std::uniform_int_distribution<Uint8> dis_color(160, 255);
-        balls[i].setColor(dis_color(gen), dis_color(gen), dis_color(gen));
     }
 }
 
-void placeBalls(Ball balls[],std::vector<int> grid[NUM_CASES_X][NUM_CASES_Y]){
-    int taille;
-    for(int x=0;x<NUM_CASES_X;x++){
+void placeBalls(Ball balls[],std::vector<int> grid[NUM_CASES_X][NUM_CASES_Y]){//Place les balles dans le tableau selon leur position
+    for(int x=0;x<NUM_CASES_X;x++){//Vide la grille
         for(int y=0;y<NUM_CASES_Y;y++){
             grid[x][y].clear();
             grid[x][y].shrink_to_fit();
@@ -194,12 +185,14 @@ void placeBalls(Ball balls[],std::vector<int> grid[NUM_CASES_X][NUM_CASES_Y]){
 
     int grid_x, grid_y;
     for(int i=0;i<NUM_BALLS;i++){
+        //Calcule la position des balles dans la grille
         grid_x = (int)(balls[i].getPos().x) / CELL_SIZE;
         grid_y = (int)(balls[i].getPos().y) / CELL_SIZE;
         if(_isnan(balls[i].getPos().x)){
             std::cout<<"placeBalls NaN\n";
         }
 
+        //Vérifie les valeurs
         if(grid_x>=NUM_CASES_X){
             grid_x = NUM_CASES_X - 1;
         }
@@ -207,7 +200,7 @@ void placeBalls(Ball balls[],std::vector<int> grid[NUM_CASES_X][NUM_CASES_Y]){
             grid_y = NUM_CASES_Y - 1;
         }
 
-        grid[grid_x][grid_y].push_back(i); //Rempli la grille des indices de toutes les balles en fonction de leur position
+        grid[grid_x][grid_y].push_back(i); //Remplit la grille des indices de toutes les balles en fonction de leur position
 
     }
 }
