@@ -1,12 +1,9 @@
-/*
-À faire :
-- Ajouter la gravité
- */
-
 #include <iostream>
 #include <vector>
+#include <string>
 #include <SFML/Graphics.hpp>
 #include "objects.hpp"
+#include <thread>
 
 
 
@@ -15,19 +12,28 @@ int main(){
     Ball* balls = new Ball[NUM_BALLS];//Tableau contenant toutes les balles
 
     randomBalls(balls); //Rempli le tableau de balles aux valeurs aléatoires
-    std::vector<int> grid[NUM_CASES_X][NUM_CASES_Y]; // Créer une grille 3D de taille variable sur l'axe z
+    std::vector<short unsigned int> grid[NUM_CASES_X][NUM_CASES_Y]; // Créer une grille 3D de taille variable sur l'axe z
 
-    RenderWindow window(sf::VideoMode(MAX_X, MAX_Y), "2D Simulation"); //Initialise la fenêtre de rendu
+    RenderWindow window(VideoMode(MAX_X, MAX_Y), "2D Simulation"); //Initialise la fenêtre de rendu
 
     //Créer le fond
-    RectangleShape rectangle(Vector2f(MAX_X, MAX_Y));
-    rectangle.setFillColor(Color(48, 48, 64,128));
-    RectangleShape dynamic_background[NUM_CASES_X][NUM_CASES_Y];
+    RectangleShape background(Vector2f(MAX_X, MAX_Y));
+    background.setFillColor(Color(48, 48, 64, 128));
+
+    //Créer le texte
+    Font arial;
+    arial.loadFromFile("../arial.ttf");
+    Text text;
+    text.setFont(arial);
+    text.setCharacterSize(24);
+    text.setFillColor(Color::White);
+    RectangleShape rectangle(Vector2f(30, 30));
+    rectangle.setFillColor(Color(48, 48, 64));
+
 
     //Initialise le timer pour afficher les fps
     Clock clock;
-    Time t;
-
+    Time time;
 
     //Boucle principale
     int frame=0;
@@ -43,76 +49,80 @@ int main(){
                 window.close();
         }
 
-        window.draw(rectangle);
-        //placeBalls(balls,grid);
+        float delta;
+        if(FIXED_DELTA){
+            delta = 1.0f/300.0f;
+        }
+        else{
+            delta = time.asSeconds();
+        }
+
+        window.draw(background);
 
         if (DYNAMIC_BACKGROUND) {
+            RectangleShape dynamic_background[NUM_CASES_X][NUM_CASES_Y];
             for (int x = 0; x < NUM_CASES_X; x++) {
                 for (int y = 0; y < NUM_CASES_Y; y++) {
                     dynamic_background[x][y].setPosition((float)x * CELL_SIZE, (float)y * CELL_SIZE);
-                    dynamic_background[x][y].setSize(sf::Vector2f(CELL_SIZE, CELL_SIZE));
+                    dynamic_background[x][y].setSize(Vector2f(CELL_SIZE, CELL_SIZE));
                     dynamic_background[x][y].setOutlineThickness(2);
                     dynamic_background[x][y].setOutlineColor(Color(255, 255, 255));
                     if (grid[x][y].empty()) {
-                        dynamic_background[x][y].setFillColor(Color(0, 0, 0));
-                    } else {
-                        dynamic_background[x][y].setFillColor(Color(0, 0, 200));
+                        dynamic_background[x][y].setFillColor(Color::Black);
+                    }
+                    else if(grid[x][y].size()==1) {
+                        dynamic_background[x][y].setFillColor(Color(64,64,64));
+                    }
+                    else if(grid[x][y].size()==2) {
+                        dynamic_background[x][y].setFillColor(Color(128,128,128));
+                    }
+                    else if(grid[x][y].size()==3) {
+                        dynamic_background[x][y].setFillColor(Color(196,196,196));
+                    }
+                    else {
+                        dynamic_background[x][y].setFillColor(Color::White);
                     }
                     window.draw(dynamic_background[x][y]);
                 }
             }
         }
 
-        for (int step = 0; step < SUB_STEPS; step++) {//Vérifications de collision supplémentaires pour plus de précision
-            for (int ix = 0; ix < NUM_CASES_X; ix++) {//Parcourir la grille
-                for (int iy = 0; iy < NUM_CASES_Y; iy++) {
-                    std::vector<int>& current_vector = grid[ix][iy];
-                    if (current_vector.size() <= 1) {
-                        continue; //Passer s'il y a 0 ou 1 balle dans cette case
-                    }
-                    for (int current_ball : current_vector) {
-                        for (int rx = -1; rx <= 1; rx++) {//Parcourir un carré de 3x3 autour de la case actuelle
-                            for (int ry = -1; ry <= 1; ry++) {
-                                if (ix + rx < 0 || ix + rx >= NUM_CASES_X || iy + ry < 0 || iy + ry >= NUM_CASES_Y) {//Passer si on sort de la grille
-                                    continue;
-                                }
-                                std::vector<int>& other_vector = grid[ix + rx][iy + ry];
-                                for (int other_ball : other_vector) {
-                                    if (current_ball != other_ball) {
-                                        collision(&balls[current_ball], &balls[other_ball]);//On essaye les collisions entre toutes les balles assez proches
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            /*
-            for (int i=0;i<NUM_BALLS;i++){ //Résolveur de collisions plus basique
-                for (int j=i+1;j<NUM_BALLS;j++){
-                    collision(&balls[i],&balls[j]);
-                }
-            }*/
+        clearGrid(grid);
+        placeBalls(balls,grid);
+
+        mouseInteraction(delta, window, balls);
+        updateGrid(delta, &window, balls);
+
+        //Multithreading :
+        std::thread collision_thread[NUM_THREADS];
+        const int collision_thread_size = NUM_CASES_X / NUM_THREADS+1;
+        for (int i=0; i<NUM_THREADS; i++){//On divise la grille de collision entre différents threads
+            collision_thread[i] = std::thread(collisionGrid, balls, grid, i * collision_thread_size,(i + 1) * collision_thread_size);
+        }
+        for (auto & i : collision_thread){
+            i.join();
         }
 
 
-
-        for (int a=0;a<NUM_BALLS;a++){//On update et affiche toutes les balles
+        //Affichage :
+        for (int i=0; i < NUM_BALLS; i++){//On calcule les couleurs et affiche toutes les balles
             if(frame==1 || FIXED_COLORS) {//Les couleurs des balles changent en fonction de leur position
-                float rgb_factor_x = MAX_X / 255.0f;
-                float rgb_factor_y = MAX_Y / 255.0f;
-                Vector2f pos = balls[a].getPos();
-                balls[a].setColor((int) (pos.y / rgb_factor_y), (int) (pos.x / rgb_factor_x),(int) (255 - pos.y / rgb_factor_y));
+                float rgb_factor_x = MAX_X / 256.0f;
+                float rgb_factor_y = MAX_Y / 256.0f;
+                Vector2f pos = balls[i].getPos();
+                balls[i].setColor((int) (pos.y / rgb_factor_y), (int) (pos.x / rgb_factor_x), (int) (255 - pos.y / rgb_factor_y));
             }
-            balls[a].update(t.asSeconds());
-            window.draw(balls[a].circle);
+            window.draw(balls[i].circle);
         }
 
-
+        text.setString(std::to_string((int)(1.0 / time.asSeconds())));
+        window.draw(rectangle);
+        window.draw(text);
 
         window.display();
-        t = clock.getElapsedTime();
-        std::cout << 1.0 / t.asSeconds() << " fps\n";
+        time = clock.getElapsedTime();
+        //std::cout << 1.0 / time.asSeconds() << " fps\n";
     }
+
     delete[](balls);
 }

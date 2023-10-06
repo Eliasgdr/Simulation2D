@@ -15,7 +15,7 @@ float length(Vector2f v){//Longueur du vecteur
 }
 
 Vector2f normalize(Vector2f v){//Renvoie le vecteur de longueur 1
-    float len = length(v);
+    const float len = length(v);
     if (len > 0.0f) {
         return {v.x / len, v.y / len};
     } else {
